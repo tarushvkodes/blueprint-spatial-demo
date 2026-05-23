@@ -1,4 +1,5 @@
 import {
+  ArrowLeft,
   ArrowRight,
   Boxes,
   CheckCircle2,
@@ -14,7 +15,7 @@ import {
   Sparkles,
   UploadCloud,
 } from 'lucide-react'
-import { useRef, type CSSProperties } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { useLandingAnimations } from './hooks/useLandingAnimations'
 import { RobotPreview } from './RobotPreview'
 import { LiquidLogoMark, ShaderBackdrop } from './VisualEffects'
@@ -55,8 +56,69 @@ export function LandingPage({
 }: LandingPageProps) {
   const manifestoRef = useRef<HTMLParagraphElement>(null)
   const pinnedRef = useRef<HTMLElement>(null)
+  const [currentSlide, setCurrentSlide] = useState(0)
+  const slideLabels = useMemo(() => [
+    'Hero',
+    'Team profile',
+    'Inputs',
+    'Platform',
+    'Concepts',
+    'Rules and BOM',
+    'Physics',
+    'Workflow',
+    'CAD and code',
+    'Build',
+    'Iteration',
+    'Chat',
+    'Launch',
+  ], [])
 
   useLandingAnimations({ manifestoRef, pinnedRef, refreshKey: project })
+
+  const goToSlide = useCallback((direction: 1 | -1) => {
+    const slides = Array.from(document.querySelectorAll<HTMLElement>('[data-demo-slide]'))
+    if (!slides.length) return
+    const nextIndex = Math.min(slides.length - 1, Math.max(0, currentSlide + direction))
+    slides[nextIndex]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    setCurrentSlide(nextIndex)
+  }, [currentSlide])
+
+  useEffect(() => {
+    const slides = Array.from(document.querySelectorAll<HTMLElement>('[data-demo-slide]'))
+    if (!slides.length) return
+
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]
+      if (!visible) return
+      const index = slides.indexOf(visible.target as HTMLElement)
+      if (index >= 0) setCurrentSlide(index)
+    }, { threshold: [0.34, 0.52, 0.7] })
+
+    slides.forEach((slide) => observer.observe(slide))
+
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null
+      const tagName = target?.tagName?.toLowerCase()
+      if (tagName === 'input' || tagName === 'textarea' || tagName === 'select' || target?.isContentEditable) return
+      if (event.key === 'ArrowRight' || event.key === 'PageDown') {
+        event.preventDefault()
+        goToSlide(1)
+      }
+      if (event.key === 'ArrowLeft' || event.key === 'PageUp') {
+        event.preventDefault()
+        goToSlide(-1)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [goToSlide])
 
   return (
     <main className="app-shell overflow-x-hidden w-full max-w-full">
@@ -84,7 +146,7 @@ export function LandingPage({
         </button>
       </nav>
 
-      <section className="hero-section" id="top">
+      <section className="hero-section demo-slide" id="top" data-demo-slide>
         <div className="hero-wash" />
         <div className="hero-copy">
           <p className="eyebrow">AI engineering co-pilot for FTC teams</p>
@@ -145,7 +207,7 @@ export function LandingPage({
         </div>
       </section>
 
-      <section className="onboarding-section" id="strategy">
+      <section className="onboarding-section demo-slide" id="strategy" data-demo-slide>
         <div className="section-heading">
           <h2>One team profile becomes a full engineering packet.</h2>
           <p>
@@ -185,7 +247,7 @@ export function LandingPage({
         </div>
       </section>
 
-      <section className="source-demo-section">
+      <section className="source-demo-section demo-slide" data-demo-slide>
         <div className="source-demo-copy">
           <h2>
             Drag official inputs into <span>Blueprint</span>; watch them resolve into buildable outputs.
@@ -234,7 +296,7 @@ export function LandingPage({
         </div>
       </section>
 
-      <section className="bento-section">
+      <section className="bento-section demo-slide" data-demo-slide>
         <div className="feature-grid">
           {platformModules.map((module) => {
             const Icon = module.icon
@@ -252,7 +314,7 @@ export function LandingPage({
         </div>
       </section>
 
-      <section className="concept-section" id="design">
+      <section className="concept-section demo-slide" id="design" data-demo-slide>
         <div className="section-heading wide">
           <h2>Three concepts, then a merge path.</h2>
           <p>
@@ -280,7 +342,7 @@ export function LandingPage({
         </div>
       </section>
 
-      <section className="rules-section" id="bom">
+      <section className="rules-section demo-slide" id="bom" data-demo-slide>
         <div className="split-heading">
           <h2>Rules, budget, and supply move together.</h2>
           <p>
@@ -319,7 +381,7 @@ export function LandingPage({
         </div>
       </section>
 
-      <section className="physics-section" id="physics">
+      <section className="physics-section demo-slide" id="physics" data-demo-slide>
         <div className="section-heading">
           <h2>Show the proof, not just the part.</h2>
           <p>
@@ -344,7 +406,7 @@ export function LandingPage({
         </div>
       </section>
 
-      <section className="pinned-section" ref={pinnedRef}>
+      <section className="pinned-section demo-slide" ref={pinnedRef} data-demo-slide>
         <div className="pinned-title">
           <h2>Agentic workflow with review gates.</h2>
           <p>
@@ -362,7 +424,7 @@ export function LandingPage({
         </div>
       </section>
 
-      <section className="cad-code-section" id="cad">
+      <section className="cad-code-section demo-slide" id="cad" data-demo-slide>
         <div className="cad-panel liquid-glass image-scale">
           <RobotPreview />
           <div className="cad-overlay">
@@ -384,7 +446,7 @@ export function LandingPage({
         </div>
       </section>
 
-      <section className="build-section" id="build">
+      <section className="build-section demo-slide" id="build" data-demo-slide>
         <div className="section-heading wide">
           <h2>
             Build guide with checkpoints and test-before-continuing moments.
@@ -400,7 +462,7 @@ export function LandingPage({
         </div>
       </section>
 
-      <section className="accordion-section">
+      <section className="accordion-section demo-slide" data-demo-slide>
         <div className="horizontal-accordion">
           {getAccordionPanels(project).map((item, index) => {
             const Icon = item.icon
@@ -429,7 +491,7 @@ export function LandingPage({
         </p>
       </section>
 
-      <section className="chat-section" id="chat">
+      <section className="chat-section demo-slide" id="chat" data-demo-slide>
           <div className="chat-card liquid-glass">
           <MessageSquareText size={28} />
           <h2>Project-aware chatbot for iteration.</h2>
@@ -467,12 +529,33 @@ export function LandingPage({
         </div>
       </div>
 
-      <footer className="footer-cta">
+      <footer className="footer-cta demo-slide" data-demo-slide>
         <h2>Turn kickoff chaos into a cited, budgeted, buildable first plan.</h2>
         <button className="button button-primary" type="button" onClick={() => openWorkspace('Dashboard')}>
           Start the workspace
         </button>
       </footer>
+
+      <div className="slide-controls liquid-glass" aria-label="Slideshow controls">
+        <button
+          type="button"
+          onClick={() => goToSlide(-1)}
+          disabled={currentSlide === 0}
+          aria-label="Previous slide"
+        >
+          <ArrowLeft size={20} />
+        </button>
+        <span>{currentSlide + 1} / {slideLabels.length}</span>
+        <strong>{slideLabels[currentSlide] || 'Blueprint'}</strong>
+        <button
+          type="button"
+          onClick={() => goToSlide(1)}
+          disabled={currentSlide >= slideLabels.length - 1}
+          aria-label="Next slide"
+        >
+          <ArrowRight size={20} />
+        </button>
+      </div>
     </main>
   )
 }

@@ -1275,6 +1275,66 @@ button:active,
   margin: 0 auto 34px;
 }
 
+.demo-slide {
+  min-height: 100dvh;
+  scroll-margin-top: 92px;
+}
+
+.slide-controls {
+  position: fixed;
+  right: 50%;
+  bottom: 18px;
+  z-index: 40;
+  display: grid;
+  width: min(420px, calc(100% - 32px));
+  grid-template-columns: 48px auto 1fr 48px;
+  gap: 10px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid rgba(238, 248, 240, 0.18);
+  border-radius: 999px;
+  color: rgba(238, 248, 240, 0.82);
+  transform: translateX(50%);
+}
+
+.slide-controls button {
+  display: grid;
+  width: 48px;
+  height: 40px;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  color: #07110e;
+  background: #eef8f0;
+  cursor: pointer;
+  transition: opacity 180ms ease, transform 180ms ease, background 180ms ease;
+}
+
+.slide-controls button:hover:not(:disabled) {
+  background: #f4c66a;
+  transform: translateY(-1px);
+}
+
+.slide-controls button:disabled {
+  opacity: 0.34;
+  cursor: not-allowed;
+}
+
+.slide-controls span {
+  color: rgba(238, 248, 240, 0.58);
+  font-size: 0.84rem;
+  font-weight: 780;
+  white-space: nowrap;
+}
+
+.slide-controls strong {
+  overflow: hidden;
+  color: #fff8e9;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .workspace-screen {
   min-height: 100dvh;
   padding: 24px clamp(16px, 4vw, 54px) 80px;
@@ -1945,6 +2005,7 @@ button:active,
 
 .nav-shell.liquid-glass,
 .workspace-nav.liquid-glass,
+.slide-controls.liquid-glass,
 .workspace-command-panel.liquid-glass,
 .source-demo-stage.liquid-glass,
 .profile-panel.liquid-glass,
@@ -2279,6 +2340,15 @@ button:active,
 
   .workspace-sidebar {
     grid-template-columns: 1fr;
+  }
+
+  .slide-controls {
+    grid-template-columns: 44px auto 44px;
+    width: min(300px, calc(100% - 28px));
+  }
+
+  .slide-controls strong {
+    display: none;
   }
 
   .workspace-list,
