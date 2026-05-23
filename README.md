@@ -1,73 +1,41 @@
-# React + TypeScript + Vite
+# Blueprint Spatial Demo
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Blueprint is an AI engineering workspace concept for FIRST Tech Challenge teams. This repository contains an interactive product presentation/demo that shows the expected MVP capability: ingesting official FTC materials and team constraints, then producing strategy, rules citations, REV-first BOMs, mechanism math, conceptual CAD, FTC SDK Java starter code, build guidance, grant support, and driver-log optimization.
 
-Currently, two official plugins are available:
+## Run Locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The Vite app runs at `http://localhost:5173/` and the local demo API runs at `http://localhost:8787/`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Build
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run build
 ```
+
+For GitHub Pages project hosting, build with a path base:
+
+```bash
+VITE_BASE_PATH=/blueprint-spatial-demo/ npm run build
+```
+
+## Demo Inputs
+
+The static build includes the attached PDFs under `public/docs`:
+
+- `blueprint-mvp-writeup.pdf`
+- `decode-competition-manual-tu32.pdf`
+- `metal-magic-mvp-marketing-presentation.pdf`
+
+## Stack
+
+- React, TypeScript, Vite
+- GSAP ScrollTrigger
+- React Three Fiber and Three.js
+- ShaderGradient
+- Paper Design shaders
+- Liquid glass UI treatment

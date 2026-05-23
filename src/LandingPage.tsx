@@ -1,16 +1,20 @@
 import {
+  ArrowRight,
   Boxes,
   CheckCircle2,
   ChevronRight,
   Code2,
   Cpu,
+  Download,
+  FileText,
   Gauge,
   Layers3,
   MessageSquareText,
   ShieldCheck,
   Sparkles,
+  UploadCloud,
 } from 'lucide-react'
-import { useRef } from 'react'
+import { useRef, type CSSProperties } from 'react'
 import { useLandingAnimations } from './hooks/useLandingAnimations'
 import { RobotPreview } from './RobotPreview'
 import { LiquidLogoMark, ShaderBackdrop } from './VisualEffects'
@@ -18,11 +22,13 @@ import {
   agentRows,
   codeSample,
   defaultBlueprintQuestion,
+  generatedOutputs,
   getAccordionPanels,
   manifesto,
   navItems,
   platformModules,
   profilePriorities,
+  sourceArtifacts,
 } from './projectData'
 import type { Concept, ProjectData, WorkspaceTab } from './types'
 
@@ -83,7 +89,7 @@ export function LandingPage({
         <div className="hero-copy">
           <p className="eyebrow">AI engineering co-pilot for FTC teams</p>
           <h1>
-            Build the robot plan before kickoff eats your calendar.
+            Robot plans before kickoff chaos.
           </h1>
           <p className="hero-lede">
             A complete project workspace for strategy, rules citations, REV BOMs, physics-backed mechanisms,
@@ -175,6 +181,55 @@ export function LandingPage({
                 {priority}
               </span>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="source-demo-section">
+        <div className="source-demo-copy">
+          <h2>
+            Drag official inputs into <span>Blueprint</span>; watch them resolve into buildable outputs.
+          </h2>
+          <p>
+            This demo bakes in the attached FTC manual, MVP writeup, and pitch guidance so judges can see the intended
+            capability without waiting for a live robot team to upload files.
+          </p>
+        </div>
+        <div className="source-demo-stage liquid-glass image-scale" aria-label="Blueprint input and output demo">
+          <div className="source-orbit">
+            {sourceArtifacts.map((artifact, index) => (
+              <a
+                className="source-card"
+                href={artifact.href}
+                key={artifact.title}
+                style={{ '--delay': `${index * 0.9}s` } as CSSProperties}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <FileText size={22} />
+                <span>{artifact.kind}</span>
+                <strong>{artifact.title}</strong>
+                <small>{artifact.detail}</small>
+                <em><Download size={14} /> Open PDF</em>
+              </a>
+            ))}
+          </div>
+          <div className="blueprint-core">
+            <LiquidLogoMark size={82} />
+            <strong>Blueprint engine</strong>
+            <span>Rules RAG + supply + math + CAD + code</span>
+          </div>
+          <div className="output-rack">
+            {generatedOutputs.map((output, index) => (
+              <span key={output} style={{ '--delay': `${index * 0.18}s` } as CSSProperties}>
+                {output}
+              </span>
+            ))}
+          </div>
+          <div className="drag-ghost" aria-hidden="true">
+            <UploadCloud size={20} />
+            manual.pdf
+            <ArrowRight size={18} />
           </div>
         </div>
       </section>
