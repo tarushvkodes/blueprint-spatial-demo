@@ -12,9 +12,17 @@ import type {
   AiStatus,
 } from './types'
 
-const API_BASE = 'http://localhost:8787/api'
+const configuredApiBase = import.meta.env.VITE_API_BASE?.replace(/\/$/, '')
+const localApiBase = typeof window !== 'undefined' && /^localhost$|^127\.0\.0\.1$/.test(window.location.hostname)
+  ? 'http://localhost:8787/api'
+  : ''
+const API_BASE = configuredApiBase || localApiBase
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
+  if (!API_BASE) {
+    throw new Error('Blueprint API is not configured for this static demo.')
+  }
+
   const response = await fetch(`${API_BASE}${path}`, init)
 
   if (!response.ok) {
@@ -222,10 +230,12 @@ export async function analyzeDriverLogText(projectId: string, text: string) {
 }
 
 export function projectCodeExportUrl(projectId: string) {
+  if (!API_BASE) return 'docs/blueprint-mvp-writeup.pdf'
   return `${API_BASE}/projects/${projectId}/code/export.zip`
 }
 
 export function artifactUrl(path?: string) {
   if (!path) return '#'
+  if (!API_BASE) return path.startsWith('http') ? path : '#'
   return path.startsWith('http') ? path : `${API_BASE}${path.startsWith('/api') ? path.slice(4) : path}`
 }
