@@ -2,36 +2,28 @@ import {
   ArrowLeft,
   ArrowRight,
   Boxes,
+  Calculator,
   CheckCircle2,
-  ChevronRight,
   Code2,
-  Cpu,
-  Download,
+  FileCheck2,
   FileText,
-  Gauge,
+  HandCoins,
   Layers3,
   MessageSquareText,
+  Route,
   ShieldCheck,
-  Sparkles,
+  SlidersHorizontal,
   UploadCloud,
 } from 'lucide-react'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import { useLandingAnimations } from './hooks/useLandingAnimations'
 import { RobotPreview } from './RobotPreview'
 import { LiquidLogoMark, ShaderBackdrop } from './VisualEffects'
-import {
-  agentRows,
-  codeSample,
-  defaultBlueprintQuestion,
-  generatedOutputs,
-  getAccordionPanels,
-  manifesto,
-  navItems,
-  platformModules,
-  profilePriorities,
-  sourceArtifacts,
-} from './projectData'
+import { codeSample, generatedOutputs, sourceArtifacts } from './projectData'
 import type { Concept, ProjectData, WorkspaceTab } from './types'
+
+gsap.registerPlugin(ScrollTrigger)
 
 type LandingPageProps = {
   project: ProjectData
@@ -44,47 +36,64 @@ type LandingPageProps = {
   openWorkspace: (tab?: WorkspaceTab) => void
 }
 
+const pitchScenes = [
+  'Hook',
+  'Problem',
+  'Solution',
+  'Workspace',
+  'Proof',
+  'Demo',
+  'Close',
+]
+
+const workspaceTabs = [
+  { name: 'Inputs', icon: UploadCloud, copy: 'Manual, team profile, budget, inventory, tools, timeline, priorities.' },
+  { name: 'Rules', icon: FileCheck2, copy: 'Citations stay attached to legality-sensitive output instead of becoming AI vibes.' },
+  { name: 'BOM', icon: Boxes, copy: 'REV-first cost, stock caveats, owned parts, missing parts, and buy-first ranking.' },
+  { name: 'CAD', icon: Layers3, copy: 'Conceptual starter assembly with explicit verification warnings before manufacturing.' },
+  { name: 'Code', icon: Code2, copy: 'FTC SDK Java scaffold aligned to generated hardware names and mechanism limits.' },
+]
+
+const problemCards = [
+  'A 188-page manual becomes a weekend of uncertainty.',
+  'Rookie teams need strategy, CAD, code, budget, and rules at once.',
+  'Mentor time is scarce exactly when decisions are most expensive.',
+  'A chatbot answer is not enough; teams need a packet they can inspect.',
+]
+
+const proofCards = [
+  { title: 'Cited legality', icon: ShieldCheck, body: 'Every rule-sensitive answer carries section, version, confidence, and a verify-with-officials caveat.' },
+  { title: 'Visible math', icon: Calculator, body: 'Torque, RPM, gear ratio, current, lift load, and driver speed limits are shown as formulas.' },
+  { title: 'Buildable budget', icon: Boxes, body: 'The BOM knows what the team owns, what to buy, what to skip, and where risk enters.' },
+  { title: 'Real artifacts', icon: Route, body: 'The workspace generates CAD starters, FTC Java, build checks, grant drafts, and driver log advice.' },
+]
+
 export function LandingPage({
   project,
   selected,
   selectedConcept,
   setSelectedConcept,
   total,
-  activeAccordion,
-  setActiveAccordion,
-  openWorkspace,
 }: LandingPageProps) {
-  const manifestoRef = useRef<HTMLParagraphElement>(null)
-  const pinnedRef = useRef<HTMLElement>(null)
-  const [currentSlide, setCurrentSlide] = useState(0)
-  const slideLabels = useMemo(() => [
-    'Hero',
-    'Team profile',
-    'Inputs',
-    'Platform',
-    'Concepts',
-    'Rules and BOM',
-    'Physics',
-    'Workflow',
-    'CAD and code',
-    'Build',
-    'Iteration',
-    'Chat',
-    'Launch',
-  ], [])
+  const [currentScene, setCurrentScene] = useState(0)
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState(0)
+  const [revealedOutput, setRevealedOutput] = useState(4)
+  const revealRef = useRef<HTMLParagraphElement>(null)
+  const stageRef = useRef<HTMLDivElement>(null)
 
-  useLandingAnimations({ manifestoRef, pinnedRef, refreshKey: project })
+  const selectedWorkspaceTab = workspaceTabs[activeWorkspaceTab]
+  const scenes = useMemo(() => pitchScenes, [])
 
-  const goToSlide = useCallback((direction: 1 | -1) => {
-    const slides = Array.from(document.querySelectorAll<HTMLElement>('[data-demo-slide]'))
+  const goToScene = useCallback((direction: 1 | -1) => {
+    const slides = Array.from(document.querySelectorAll<HTMLElement>('[data-pitch-scene]'))
     if (!slides.length) return
-    const nextIndex = Math.min(slides.length - 1, Math.max(0, currentSlide + direction))
+    const nextIndex = Math.min(slides.length - 1, Math.max(0, currentScene + direction))
     slides[nextIndex]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    setCurrentSlide(nextIndex)
-  }, [currentSlide])
+    setCurrentScene(nextIndex)
+  }, [currentScene])
 
   useEffect(() => {
-    const slides = Array.from(document.querySelectorAll<HTMLElement>('[data-demo-slide]'))
+    const slides = Array.from(document.querySelectorAll<HTMLElement>('[data-pitch-scene]'))
     if (!slides.length) return
 
     const observer = new IntersectionObserver((entries) => {
@@ -93,11 +102,10 @@ export function LandingPage({
         .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]
       if (!visible) return
       const index = slides.indexOf(visible.target as HTMLElement)
-      if (index >= 0) setCurrentSlide(index)
-    }, { threshold: [0.34, 0.52, 0.7] })
+      if (index >= 0) setCurrentScene(index)
+    }, { threshold: [0.38, 0.56, 0.72] })
 
     slides.forEach((slide) => observer.observe(slide))
-
     return () => observer.disconnect()
   }, [])
 
@@ -108,450 +116,302 @@ export function LandingPage({
       if (tagName === 'input' || tagName === 'textarea' || tagName === 'select' || target?.isContentEditable) return
       if (event.key === 'ArrowRight' || event.key === 'PageDown') {
         event.preventDefault()
-        goToSlide(1)
+        goToScene(1)
       }
       if (event.key === 'ArrowLeft' || event.key === 'PageUp') {
         event.preventDefault()
-        goToSlide(-1)
+        goToScene(-1)
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [goToSlide])
+  }, [goToScene])
+
+  useEffect(() => {
+    const context = gsap.context(() => {
+      gsap.fromTo(
+        '.pitch-copy > *, .spatial-workspace',
+        { y: 34, opacity: 0 },
+        { y: 0, opacity: 1, duration: 1, stagger: 0.11, ease: 'power3.out' },
+      )
+
+      gsap.utils.toArray<HTMLElement>('.stack-card').forEach((card, index) => {
+        gsap.fromTo(card, {
+          y: 90 + index * 24,
+          rotateX: 10,
+          opacity: 0.18,
+        }, {
+          y: index * -18,
+          rotateX: 0,
+          opacity: 1,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: card,
+            start: 'top 86%',
+            end: 'top 42%',
+            scrub: true,
+          },
+        })
+      })
+
+      if (revealRef.current) {
+        const words = revealRef.current.querySelectorAll('span')
+        gsap.fromTo(words, { opacity: 0.14 }, {
+          opacity: 1,
+          stagger: 0.04,
+          scrollTrigger: {
+            trigger: revealRef.current,
+            start: 'top 76%',
+            end: 'bottom 38%',
+            scrub: true,
+          },
+        })
+      }
+    }, stageRef)
+
+    return () => context.revert()
+  }, [])
 
   return (
-    <main className="app-shell overflow-x-hidden w-full max-w-full">
+    <main className="pitch-shell overflow-x-hidden w-full max-w-full" ref={stageRef}>
       <ShaderBackdrop />
-      <nav className="nav-shell liquid-glass">
-        <button className="brand" type="button" onClick={() => openWorkspace('Dashboard')} aria-label="Blueprint workspace">
-          <span className="brand-mark">
-            <LiquidLogoMark size={34} />
-          </span>
-          Blueprint
-        </button>
-        <div className="nav-links" aria-label="Primary navigation">
-          {navItems.map((item) => (
-            <button
-              key={item}
-              type="button"
-              onClick={() => openWorkspace(item === 'CAD' ? 'Design' : (item as WorkspaceTab))}
-            >
-              {item}
-            </button>
+
+      <header className="pitch-brand liquid-glass" aria-label="Blueprint presentation">
+        <span className="brand-mark">
+          <LiquidLogoMark size={34} />
+        </span>
+        <strong>Blueprint</strong>
+        <small>Metal Magic MVP demo</small>
+      </header>
+
+      <section className="pitch-scene pitch-hero" data-pitch-scene>
+        <div className="pitch-copy">
+          <p className="pitch-kicker">Hook</p>
+          <h1>
+            From manual to first robot plan.
+          </h1>
+          <p>
+            This is not the product homepage. It is the pitch: a spatial demo of the workspace Blueprint should become.
+          </p>
+        </div>
+        <div className="spatial-workspace hero-workspace liquid-glass">
+          <div className="workspace-chrome">
+            <span>Metal Magic FTC</span>
+            <strong>DECODE TU32 indexed</strong>
+          </div>
+          <div className="workspace-map">
+            <div>
+              <FileText size={20} />
+              <span>Manual</span>
+            </div>
+            <div>
+              <Boxes size={20} />
+              <span>Inventory</span>
+            </div>
+            <div>
+              <SlidersHorizontal size={20} />
+              <span>Driver logs</span>
+            </div>
+          </div>
+          <RobotPreview />
+          <div className="workspace-result">
+            <span>Generated packet</span>
+            <strong>{selected.name}</strong>
+          </div>
+        </div>
+      </section>
+
+      <section className="pitch-scene problem-scene" data-pitch-scene>
+        <div className="pitch-copy">
+          <p className="pitch-kicker">Problem</p>
+          <h2>
+            Build week asks students to solve five jobs at once.
+          </h2>
+        </div>
+        <div className="problem-wall">
+          {problemCards.map((card, index) => (
+            <article className="problem-card liquid-glass stack-card" key={card}>
+              <span aria-hidden="true">{problemCards.length - index}</span>
+              <p>{card}</p>
+            </article>
           ))}
         </div>
-        <button className="nav-action" type="button" onClick={() => openWorkspace('Dashboard')}>
-          Open workspace
-        </button>
-      </nav>
-
-      <section className="hero-section demo-slide" id="top" data-demo-slide>
-        <div className="hero-wash" />
-        <div className="hero-copy">
-          <p className="eyebrow">AI engineering co-pilot for FTC teams</p>
-          <h1>
-            Robot plans before kickoff chaos.
-          </h1>
-          <p className="hero-lede">
-            A complete project workspace for strategy, rules citations, REV BOMs, physics-backed mechanisms,
-            starter CAD, FTC Java code, build instructions, grants, and driver optimization.
-          </p>
-          <div className="hero-actions">
-            <button className="button button-primary" type="button" onClick={() => openWorkspace('Dashboard')}>
-              Generate project <ChevronRight size={18} />
-            </button>
-            <button className="button button-secondary" type="button" onClick={() => openWorkspace('Physics')}>
-              Inspect the math
-            </button>
-          </div>
-          <div className="hero-system-strip liquid-glass" aria-label="Blueprint system summary">
-            <span>
-              <strong>{project.concepts.length}</strong>
-              concepts
-            </span>
-            <span>
-              <strong>${total.toLocaleString()}</strong>
-              selected BOM
-            </span>
-            <span>
-              <strong>{project.team.timelineWeeks}</strong>
-              week build lane
-            </span>
-          </div>
-        </div>
-        <div className="hero-visual image-scale">
-          <div className="workspace-card liquid-glass">
-            <div className="workspace-topline">
-              <span>{project.team.manual}</span>
-              <ShieldCheck size={18} />
-            </div>
-            <div className="robot-stage">
-              <RobotPreview />
-            </div>
-            <div className="hero-hud-grid" aria-label="Selected robot concept">
-              <span>
-                <small>Active concept</small>
-                <strong>{selected.difficulty}</strong>
-              </span>
-              <span>
-                <small>Build time</small>
-                <strong>{selected.buildTime}</strong>
-              </span>
-            </div>
-            <div className="workspace-footer">
-              <span>{selected.name}</span>
-              <strong>${selected.cost.toLocaleString()}</strong>
-            </div>
-          </div>
-        </div>
       </section>
 
-      <section className="onboarding-section demo-slide" id="strategy" data-demo-slide>
-        <div className="section-heading">
-          <h2>One team profile becomes a full engineering packet.</h2>
-          <p>
-            Beginner, intermediate, and advanced modes share the same backbone: constraints in, cited outputs out.
-          </p>
-        </div>
-        <div className="profile-grid">
-          <div className="profile-panel liquid-glass">
-            <h3>{project.team.name}</h3>
-            <dl>
-              <div>
-                <dt>Budget</dt>
-                <dd>${project.team.budget.toLocaleString()}</dd>
-              </div>
-              <div>
-                <dt>Supplier</dt>
-                <dd>{project.team.supplier}</dd>
-              </div>
-              <div>
-                <dt>Skill level</dt>
-                <dd>{project.team.experience}</dd>
-              </div>
-              <div>
-                <dt>Students</dt>
-                <dd>{project.team.students}</dd>
-              </div>
-            </dl>
-          </div>
-          <div className="priority-panel liquid-glass">
-            {profilePriorities.map((priority) => (
-              <span key={priority}>
-                <CheckCircle2 size={16} />
-                {priority}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="source-demo-section demo-slide" data-demo-slide>
-        <div className="source-demo-copy">
+      <section className="pitch-scene solution-scene" data-pitch-scene>
+        <div className="pitch-copy solution-copy">
+          <p className="pitch-kicker">Solution</p>
           <h2>
-            Drag official inputs into <span>Blueprint</span>; watch them resolve into buildable outputs.
+            Blueprint turns official inputs into an editable engineering packet.
           </h2>
           <p>
-            This demo bakes in the attached FTC manual, MVP writeup, and pitch guidance so judges can see the intended
-            capability without waiting for a live robot team to upload files.
+            Students stay in control. The AI proposes, cites, calculates, and packages; the team reviews, changes, and builds.
           </p>
         </div>
-        <div className="source-demo-stage liquid-glass image-scale" aria-label="Blueprint input and output demo">
-          <div className="source-orbit">
+        <div className="input-output-stage liquid-glass image-scale">
+          <div className="source-column">
             {sourceArtifacts.map((artifact, index) => (
               <a
-                className="source-card"
                 href={artifact.href}
+                className="source-token"
                 key={artifact.title}
-                style={{ '--delay': `${index * 0.9}s` } as CSSProperties}
+                style={{ '--delay': `${index * 0.26}s` } as CSSProperties}
                 target="_blank"
                 rel="noreferrer"
               >
-                <FileText size={22} />
-                <span>{artifact.kind}</span>
+                <FileText size={18} />
                 <strong>{artifact.title}</strong>
-                <small>{artifact.detail}</small>
-                <em><Download size={14} /> Open PDF</em>
+                <small>{artifact.kind}</small>
               </a>
             ))}
           </div>
-          <div className="blueprint-core">
-            <LiquidLogoMark size={82} />
-            <strong>Blueprint engine</strong>
-            <span>Rules RAG + supply + math + CAD + code</span>
+          <div className="processing-core">
+            <LiquidLogoMark size={88} />
+            <span>Rules, parts, math, CAD, code</span>
           </div>
-          <div className="output-rack">
-            {generatedOutputs.map((output, index) => (
-              <span key={output} style={{ '--delay': `${index * 0.18}s` } as CSSProperties}>
-                {output}
-              </span>
+          <div className="output-column">
+            {generatedOutputs.slice(0, revealedOutput).map((output) => (
+              <span key={output}>{output}</span>
             ))}
-          </div>
-          <div className="drag-ghost" aria-hidden="true">
-            <UploadCloud size={20} />
-            manual.pdf
-            <ArrowRight size={18} />
+            <button type="button" onClick={() => setRevealedOutput((count) => Math.min(generatedOutputs.length, count + 1))}>
+              reveal output
+            </button>
           </div>
         </div>
       </section>
 
-      <section className="bento-section demo-slide" data-demo-slide>
-        <div className="feature-grid">
-          {platformModules.map((module) => {
-            const Icon = module.icon
+      <section className="pitch-scene workspace-scene" data-pitch-scene>
+        <div className="workspace-demo liquid-glass">
+          <aside className="demo-sidebar">
+            <strong>{project.team.name}</strong>
+            <span>${project.team.budget.toLocaleString()} budget</span>
+            <span>{project.team.experience} mode</span>
+            <span>{project.team.timelineWeeks} week lane</span>
+          </aside>
+          <section className="demo-main">
+            <div className="demo-tabs">
+              {workspaceTabs.map((tab, index) => {
+                const Icon = tab.icon
+                return (
+                  <button
+                    className={activeWorkspaceTab === index ? 'active' : ''}
+                    type="button"
+                    key={tab.name}
+                    onClick={() => setActiveWorkspaceTab(index)}
+                  >
+                    <Icon size={18} />
+                    {tab.name}
+                  </button>
+                )
+              })}
+            </div>
+            <div className="demo-panel">
+              <div>
+                <p className="pitch-kicker">Workspace interaction</p>
+                <h2>{selectedWorkspaceTab.name}</h2>
+                <p>{selectedWorkspaceTab.copy}</p>
+              </div>
+              <div className="demo-inspector">
+                {activeWorkspaceTab === 0 && sourceArtifacts.map((source) => (
+                  <span key={source.title}><CheckCircle2 size={15} /> {source.title}</span>
+                ))}
+                {activeWorkspaceTab === 1 && project.rules.map((rule) => (
+                  <span key={rule.rule}><ShieldCheck size={15} /> {rule.rule}: {rule.status}</span>
+                ))}
+                {activeWorkspaceTab === 2 && project.bom.slice(0, 5).map((item) => (
+                  <span key={`${item.sku}-${item.part}`}><Boxes size={15} /> {item.part} · ${item.price}</span>
+                ))}
+                {activeWorkspaceTab === 3 && (
+                  <div className="mini-cad"><RobotPreview /></div>
+                )}
+                {activeWorkspaceTab === 4 && (
+                  <pre><code>{codeSample}</code></pre>
+                )}
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section className="pitch-scene proof-scene" data-pitch-scene>
+        <div className="pitch-copy">
+          <p className="pitch-kicker">Unique value</p>
+          <h2>
+            The difference is not that Blueprint answers. It leaves evidence behind.
+          </h2>
+        </div>
+        <div className="proof-grid">
+          {proofCards.map((card) => {
+            const Icon = card.icon
             return (
-              <article className={`feature-card liquid-glass group ${module.span}`} key={module.title}>
-                <div className="feature-card-bg" />
-                <div className="feature-icon">
-                  <Icon size={24} />
-                </div>
-                <h3>{module.title}</h3>
-                <p>{module.copy}</p>
+              <article className="proof-card liquid-glass stack-card" key={card.title}>
+                <Icon size={24} />
+                <h3>{card.title}</h3>
+                <p>{card.body}</p>
               </article>
             )
           })}
         </div>
       </section>
 
-      <section className="concept-section demo-slide" id="design" data-demo-slide>
-        <div className="section-heading wide">
-          <h2>Three concepts, then a merge path.</h2>
-          <p>
-            The MVP does not stop at a tiny demo. It generates strategy fit, architecture, cost, risks, tools,
-            upgrade path, and rule concerns for each build direction.
-          </p>
+      <section className="pitch-scene demo-scene" data-pitch-scene>
+        <div className="pitch-copy">
+          <p className="pitch-kicker">Demo</p>
+          <h2>
+            Pick a concept. Watch the workspace reframe cost, risk, and build path.
+          </h2>
         </div>
-        <div className="concept-grid">
+        <div className="concept-console">
           {project.concepts.map((concept, index) => (
             <button
-              className={`concept-card liquid-glass group ${selectedConcept === index ? 'is-selected' : ''}`}
+              className={selectedConcept === index ? 'selected' : ''}
+              type="button"
               key={concept.name}
               onClick={() => setSelectedConcept(index)}
-              type="button"
             >
               <span>{concept.difficulty}</span>
-              <h3>{concept.name}</h3>
+              <strong>{concept.name}</strong>
+              <small>${concept.cost.toLocaleString()} · {concept.buildTime}</small>
               <p>{concept.fit}</p>
-              <div className="concept-meta">
-                <strong>${concept.cost.toLocaleString()}</strong>
-                <small>{concept.buildTime}</small>
-              </div>
             </button>
           ))}
         </div>
-      </section>
-
-      <section className="rules-section demo-slide" id="bom" data-demo-slide>
-        <div className="split-heading">
-          <h2>Rules, budget, and supply move together.</h2>
-          <p>
-            Every legality-sensitive answer should carry a source, date, rule context, confidence, and a refusal to
-            invent certainty.
-          </p>
-        </div>
-        <div className="data-panels">
-          <article className="rules-panel liquid-glass">
-            <h3><ShieldCheck size={20} /> Legal checklist</h3>
-            {project.rules.map((rule) => (
-              <div className="rule-row" key={rule.rule}>
-                <strong>{rule.rule}</strong>
-                <span>{rule.section}</span>
-                <p>{rule.note}</p>
-                <small>{rule.status} confidence: {rule.confidence}</small>
-              </div>
-            ))}
-          </article>
-          <article className="bom-panel liquid-glass">
-            <div className="panel-title-row">
-              <h3><Boxes size={20} /> Bill of materials</h3>
-              <strong>${total.toLocaleString()}</strong>
-            </div>
-            <div className="bom-table">
-              {project.bom.map((item, index) => (
-                <div className="bom-row" key={`${item.sku}-${index}`}>
-                  <span>{item.subsystem}</span>
-                  <strong>{item.part}</strong>
-                  <small>{item.sku}</small>
-                  <em>{item.qty} x ${item.price}</em>
-                </div>
-              ))}
-            </div>
-          </article>
+        <div className="artifact-strip liquid-glass">
+          <span><Calculator size={16} /> {project.physics[0]?.result}</span>
+          <span><Boxes size={16} /> ${total.toLocaleString()} selected BOM</span>
+          <span><HandCoins size={16} /> Sponsor draft ready</span>
+          <span><MessageSquareText size={16} /> Driver log advice baked in</span>
         </div>
       </section>
 
-      <section className="physics-section demo-slide" id="physics" data-demo-slide>
-        <div className="section-heading">
-          <h2>Show the proof, not just the part.</h2>
-          <p>
-            Torque, RPM, gearing, stall margin, current draw, lift load, center of gravity, and driver speed limits
-            become readable student-facing calculations.
-          </p>
-        </div>
-        <div className="physics-grid">
-          {project.physics.map((item) => (
-            <article className="physics-card liquid-glass group" key={item.mechanism}>
-              <div className="physics-card-media image-scale" />
-              <div>
-                <span>{item.margin}</span>
-                <h3>{item.mechanism}</h3>
-                <code>{item.formula}</code>
-                <p>{item.inputs}</p>
-                <strong>{item.result}</strong>
-                <small>{item.recommendation}</small>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="pinned-section demo-slide" ref={pinnedRef} data-demo-slide>
-        <div className="pinned-title">
-          <h2>Agentic workflow with review gates.</h2>
-          <p>
-            Specialized agents pass structured outputs forward, then a review agent hunts contradictions before the
-            team sees the plan.
-          </p>
-        </div>
-        <div className="agent-stack">
-          {agentRows.map((row, index) => (
-            <article className="agent-card liquid-glass image-scale" key={row}>
-              <span>{String(index + 1).padStart(2, '0')}</span>
-              <p>{row}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="cad-code-section demo-slide" id="cad" data-demo-slide>
-        <div className="cad-panel liquid-glass image-scale">
-          <RobotPreview />
-          <div className="cad-overlay">
-            <Layers3 size={20} />
-            <span>Conceptual CAD starter: top, side, isometric, wiring, and exploded views.</span>
-          </div>
-        </div>
-        <div className="code-panel liquid-glass" id="code">
-          <div className="panel-title-row">
-            <h2>FTC SDK Java starter code</h2>
-            <Cpu size={22} />
-          </div>
-          <pre><code>{codeSample}</code></pre>
-          <div className="file-row">
-            {project.codeFiles.map((file) => (
-              <span key={file}>{file}</span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="build-section demo-slide" id="build" data-demo-slide>
-        <div className="section-heading wide">
-          <h2>
-            Build guide with checkpoints and test-before-continuing moments.
-          </h2>
-        </div>
-        <div className="timeline">
-          {project.buildSteps.map((step, index) => (
-            <article key={step}>
-              <span>{index + 1}</span>
-              <p>{step}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="accordion-section demo-slide" data-demo-slide>
-        <div className="horizontal-accordion">
-          {getAccordionPanels(project).map((item, index) => {
-            const Icon = item.icon
-            return (
-              <button
-                className={`accordion-slice ${activeAccordion === index ? 'open' : ''}`}
-                type="button"
-                key={item.title}
-                onMouseEnter={() => setActiveAccordion(index)}
-                onFocus={() => setActiveAccordion(index)}
-              >
-                <Icon size={24} />
-                <h3>{item.title}</h3>
-                <p>{item.copy}</p>
-              </button>
-            )
-          })}
-        </div>
-      </section>
-
-      <section className="manifesto-section">
-        <p ref={manifestoRef}>
-          {manifesto.split(' ').map((word, index) => (
+      <section className="pitch-scene close-scene" data-pitch-scene>
+        <p ref={revealRef}>
+          {'Blueprint is a complete first usable version: strategy, rules, budget, supply, math, CAD, code, build guide, grants, chatbot iteration, and driver optimization in one student-readable workspace.'.split(' ').map((word, index) => (
             <span key={`${word}-${index}`}>{word} </span>
           ))}
         </p>
-      </section>
-
-      <section className="chat-section demo-slide" id="chat" data-demo-slide>
-          <div className="chat-card liquid-glass">
-          <MessageSquareText size={28} />
-          <h2>Project-aware chatbot for iteration.</h2>
-          <p>
-            Ask why the lift stalls, make the BOM cheaper, regenerate a safer autonomous, rewrite sponsor emails, or
-            turn driver logs into a better controller map.
-          </p>
-          <div className="prompt-bar">
-            <span>{defaultBlueprintQuestion}</span>
-            <button type="button" onClick={() => openWorkspace('Chat')}>Ask</button>
-          </div>
+        <div className="close-panel liquid-glass">
+          <LiquidLogoMark size={54} />
+          <strong>Not a slideshow of screenshots.</strong>
+          <span>A spatial pitch demo of what Blueprint can do.</span>
         </div>
       </section>
 
-      <div className="marquee" aria-hidden="true">
-        <div>
-          <span>Rules RAG</span>
-          <Gauge />
-          <span>REV BOM</span>
-          <Sparkles />
-          <span>CAD Starter</span>
-          <Code2 />
-          <span>FTC Java</span>
-          <ShieldCheck />
-        </div>
-        <div>
-          <span>Rules RAG</span>
-          <Gauge />
-          <span>REV BOM</span>
-          <Sparkles />
-          <span>CAD Starter</span>
-          <Code2 />
-          <span>FTC Java</span>
-          <ShieldCheck />
-        </div>
-      </div>
-
-      <footer className="footer-cta demo-slide" data-demo-slide>
-        <h2>Turn kickoff chaos into a cited, budgeted, buildable first plan.</h2>
-        <button className="button button-primary" type="button" onClick={() => openWorkspace('Dashboard')}>
-          Start the workspace
-        </button>
-      </footer>
-
-      <div className="slide-controls liquid-glass" aria-label="Slideshow controls">
+      <div className="pitch-controls liquid-glass" aria-label="Presentation controls">
         <button
           type="button"
-          onClick={() => goToSlide(-1)}
-          disabled={currentSlide === 0}
-          aria-label="Previous slide"
+          aria-label="Previous scene"
+          onClick={() => goToScene(-1)}
+          disabled={currentScene === 0}
         >
           <ArrowLeft size={20} />
         </button>
-        <span>{currentSlide + 1} / {slideLabels.length}</span>
-        <strong>{slideLabels[currentSlide] || 'Blueprint'}</strong>
         <button
           type="button"
-          onClick={() => goToSlide(1)}
-          disabled={currentSlide >= slideLabels.length - 1}
-          aria-label="Next slide"
+          aria-label="Next scene"
+          onClick={() => goToScene(1)}
+          disabled={currentScene >= scenes.length - 1}
         >
           <ArrowRight size={20} />
         </button>
