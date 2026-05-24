@@ -20,7 +20,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { RobotPreview } from './RobotPreview'
 import { LiquidLogoMark, ShaderBackdrop } from './VisualEffects'
-import { codeSample, generatedOutputs, sourceArtifacts } from './projectData'
+import { codeSample, generatedOutputs } from './projectData'
 import type { Concept, ProjectData, WorkspaceTab } from './types'
 
 gsap.registerPlugin(ScrollTrigger)
@@ -42,6 +42,7 @@ const pitchScenes = [
   'Solution',
   'Workspace',
   'Proof',
+  'Agents',
   'Demo',
   'Close',
 ]
@@ -61,11 +62,59 @@ const problemCards = [
   'A chatbot answer is not enough; teams need a packet they can inspect.',
 ]
 
+const blueprintInputs = [
+  {
+    title: 'FTC DECODE manual TU32',
+    kind: 'Official season PDF',
+    detail: 'Rules, game overview, scoring windows, inspection language, and robot constraints.',
+  },
+  {
+    title: 'Team requirements',
+    kind: 'Strategy brief',
+    detail: 'Experience level, build space, tools, CAD skill, programming skill, timeline, and goals.',
+  },
+  {
+    title: '$1,500 budget',
+    kind: 'Constraint',
+    detail: 'Budget ceiling, existing inventory, preferred supplier, and what the team can reuse.',
+  },
+  {
+    title: 'REV Starter Kit inventory',
+    kind: 'Parts list',
+    detail: 'Owned drivetrain, structure, electronics, motors, wheels, fasteners, and spare parts.',
+  },
+  {
+    title: 'Robot priorities',
+    kind: 'Decision model',
+    detail: 'Reliable autonomous, low cost, easy maintenance, simple driver control, alliance-friendly scoring.',
+  },
+  {
+    title: 'driver-practice-log.csv',
+    kind: 'Driver logs',
+    detail: 'Gamepad timing, missed button combos, current spikes, and operator-control friction.',
+  },
+]
+
 const proofCards = [
   { title: 'Cited legality', icon: ShieldCheck, body: 'Every rule-sensitive answer carries section, version, confidence, and a verify-with-officials caveat.' },
   { title: 'Visible math', icon: Calculator, body: 'Torque, RPM, gear ratio, current, lift load, and driver speed limits are shown as formulas.' },
   { title: 'Buildable budget', icon: Boxes, body: 'The BOM knows what the team owns, what to buy, what to skip, and where risk enters.' },
   { title: 'Real artifacts', icon: Route, body: 'The workspace generates CAD starters, FTC Java, build checks, grant drafts, and driver log advice.' },
+  { title: 'Human review', icon: CheckCircle2, body: 'Blueprint gives students and mentors a starting packet to challenge, revise, and defend before building.' },
+]
+
+const agentCards = [
+  { title: 'Rules Agent', body: 'Checks robot constraints, inspection language, scoring rules, and source freshness before the plan is shown.' },
+  { title: 'Physics Agent', body: 'Turns mechanism goals into torque, RPM, gear ratio, current, and safety-margin recommendations.' },
+  { title: 'CAD Agent', body: 'Generates conceptual assemblies and flags every place students still need to verify dimensions.' },
+  { title: 'Code Agent', body: 'Writes readable FTC SDK Java around the selected hardware names and driver-control assumptions.' },
+]
+
+const chatAnswer = [
+  'Short answer: do not chase maximum RPM and maximum torque at the same time; pick an output speed that leaves torque margin.',
+  'For this DECODE intake, start around 250-350 RPM at the roller. With a 35mm roller, that gives roughly 0.46-0.64 m/s surface speed, enough to pull ARTIFACTS without launching them.',
+  'For the lift, use gearing that lands closer to 120-160 RPM output under load, then current-limit and hold position. If it stalls or browns out, reduce output speed before increasing driver aggressiveness.',
+  'I would test three presets: 60%, 75%, and 90% motor power, log current draw, and keep the fastest setting that stays below your current and thermal limits for a full driver-practice cycle.',
 ]
 
 export function LandingPage({
@@ -78,11 +127,18 @@ export function LandingPage({
   const [currentScene, setCurrentScene] = useState(0)
   const [activeWorkspaceTab, setActiveWorkspaceTab] = useState(0)
   const [revealedOutput, setRevealedOutput] = useState(4)
+  const [uploadedFiles, setUploadedFiles] = useState([blueprintInputs[0].title])
+  const [draggingFile, setDraggingFile] = useState('')
   const revealRef = useRef<HTMLParagraphElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
 
   const selectedWorkspaceTab = workspaceTabs[activeWorkspaceTab]
   const scenes = useMemo(() => pitchScenes, [])
+
+  const addUploadedFile = useCallback((fileName: string) => {
+    setUploadedFiles((files) => files.includes(fileName) ? files : [...files, fileName])
+    setActiveWorkspaceTab(0)
+  }, [])
 
   const goToScene = useCallback((direction: 1 | -1) => {
     const slides = Array.from(document.querySelectorAll<HTMLElement>('[data-pitch-scene]'))
@@ -189,13 +245,17 @@ export function LandingPage({
         <div className="pitch-copy">
           <p className="pitch-kicker">Hook</p>
           <h1>
-            From manual to first robot plan.
+            Save 1,000+ team-hours.
           </h1>
           <p>
-            This is not the product homepage. It is the pitch: a spatial demo of the workspace Blueprint should become.
+            Planning, rules checks, BOM research, CAD starts, code scaffolding, grant drafts, and driver tuning all happen before a reliable robot exists.
           </p>
         </div>
         <div className="spatial-workspace hero-workspace liquid-glass">
+          <div className="team-hours">
+            <strong>1,000+</strong>
+            <span>team-hours reclaimed across kickoff planning and first-build iteration</span>
+          </div>
           <div className="workspace-chrome">
             <span>Metal Magic FTC</span>
             <strong>DECODE TU32 indexed</strong>
@@ -243,7 +303,7 @@ export function LandingPage({
         <div className="pitch-copy solution-copy">
           <p className="pitch-kicker">Solution</p>
           <h2>
-            Blueprint turns official inputs into an editable engineering packet.
+            Drag in the chaos. Blueprint turns it into a packet.
           </h2>
           <p>
             Students stay in control. The AI proposes, cites, calculates, and packages; the team reviews, changes, and builds.
@@ -251,24 +311,39 @@ export function LandingPage({
         </div>
         <div className="input-output-stage liquid-glass image-scale">
           <div className="source-column">
-            {sourceArtifacts.map((artifact, index) => (
-              <a
-                href={artifact.href}
+            {blueprintInputs.map((artifact, index) => (
+              <button
+                type="button"
                 className="source-token"
                 key={artifact.title}
                 style={{ '--delay': `${index * 0.26}s` } as CSSProperties}
-                target="_blank"
-                rel="noreferrer"
+                draggable
+                onDragStart={(event) => {
+                  event.dataTransfer.setData('text/plain', artifact.title)
+                  setDraggingFile(artifact.title)
+                }}
+                onDragEnd={() => setDraggingFile('')}
+                onClick={() => addUploadedFile(artifact.title)}
               >
                 <FileText size={18} />
                 <strong>{artifact.title}</strong>
                 <small>{artifact.kind}</small>
-              </a>
+              </button>
             ))}
           </div>
-          <div className="processing-core">
-            <LiquidLogoMark size={88} />
-            <span>Rules, parts, math, CAD, code</span>
+          <div
+            className={`processing-core drop-core ${draggingFile ? 'is-ready' : ''}`}
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => {
+              event.preventDefault()
+              const dropped = event.dataTransfer.getData('text/plain')
+              if (dropped) addUploadedFile(dropped)
+              setDraggingFile('')
+            }}
+          >
+            <LiquidLogoMark size={80} />
+            <strong>Drop files</strong>
+            <span>{draggingFile || 'manuals, inventory, notes, logs'}</span>
           </div>
           <div className="output-column">
             {generatedOutputs.slice(0, revealedOutput).map((output) => (
@@ -313,9 +388,27 @@ export function LandingPage({
                 <p>{selectedWorkspaceTab.copy}</p>
               </div>
               <div className="demo-inspector">
-                {activeWorkspaceTab === 0 && sourceArtifacts.map((source) => (
-                  <span key={source.title}><CheckCircle2 size={15} /> {source.title}</span>
+                {activeWorkspaceTab === 0 && blueprintInputs.map((source) => (
+                  <span key={source.title}><CheckCircle2 size={15} /> {uploadedFiles.includes(source.title) ? 'Indexed' : 'Ready'} · {source.title}</span>
                 ))}
+                {activeWorkspaceTab === 0 && (
+                  <div
+                    className="workspace-drop-zone"
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={(event) => {
+                      event.preventDefault()
+                      const dropped = event.dataTransfer.getData('text/plain')
+                      if (dropped) addUploadedFile(dropped)
+                    }}
+                  >
+                    <UploadCloud size={22} />
+                    <strong>Drop a manual, inventory sheet, or driver log</strong>
+                    <small>{uploadedFiles.length} source files indexed for this demo</small>
+                    <button type="button" onClick={() => addUploadedFile('driver-practice-log.csv')}>
+                      simulate log upload
+                    </button>
+                  </div>
+                )}
                 {activeWorkspaceTab === 1 && project.rules.map((rule) => (
                   <span key={rule.rule}><ShieldCheck size={15} /> {rule.rule}: {rule.status}</span>
                 ))}
@@ -338,20 +431,52 @@ export function LandingPage({
         <div className="pitch-copy">
           <p className="pitch-kicker">Unique value</p>
           <h2>
-            The difference is not that Blueprint answers. It leaves evidence behind.
+            Blueprint leaves evidence behind.
           </h2>
         </div>
         <div className="proof-grid">
           {proofCards.map((card) => {
             const Icon = card.icon
             return (
-              <article className="proof-card liquid-glass stack-card" key={card.title}>
+              <article className="proof-card liquid-glass" key={card.title}>
                 <Icon size={24} />
                 <h3>{card.title}</h3>
                 <p>{card.body}</p>
               </article>
             )
           })}
+        </div>
+      </section>
+
+      <section className="pitch-scene agent-scene" data-pitch-scene>
+        <div className="pitch-copy">
+          <p className="pitch-kicker">Agentic AI</p>
+          <h2>
+            The chatbot routes work to specialist agents.
+          </h2>
+        </div>
+        <div className="agent-board">
+          <div className="agent-list">
+            {agentCards.map((agent) => (
+              <article className="agent-chip liquid-glass" key={agent.title}>
+                <MessageSquareText size={18} />
+                <strong>{agent.title}</strong>
+                <p>{agent.body}</p>
+              </article>
+            ))}
+          </div>
+          <div className="chat-demo liquid-glass">
+            <div className="chat-question">
+              <span>Student question</span>
+              <strong>What RPM should we set the motors to maximize torque and velocity?</strong>
+            </div>
+            <div className="chat-answer">
+              <span>Blueprint answer</span>
+              {chatAnswer.map((answer) => (
+                <p key={answer}>{answer}</p>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -387,14 +512,14 @@ export function LandingPage({
 
       <section className="pitch-scene close-scene" data-pitch-scene>
         <p ref={revealRef}>
-          {'Blueprint is a complete first usable version: strategy, rules, budget, supply, math, CAD, code, build guide, grants, chatbot iteration, and driver optimization in one student-readable workspace.'.split(' ').map((word, index) => (
+          {'Kickoff night can end with a cited, budgeted, math-backed first robot plan students can inspect and change.'.split(' ').map((word, index) => (
             <span key={`${word}-${index}`}>{word} </span>
           ))}
         </p>
         <div className="close-panel liquid-glass">
           <LiquidLogoMark size={54} />
-          <strong>Not a slideshow of screenshots.</strong>
-          <span>A spatial pitch demo of what Blueprint can do.</span>
+          <strong>From scattered kickoff inputs to a reviewable first build plan.</strong>
+          <span>Designed for students to inspect, change, test, and defend.</span>
         </div>
       </section>
 
